@@ -12,7 +12,7 @@ COLUNAS_PADRAO = [
     "EnderecoCep", "EnderecoUf", "EnderecoBairro", "DataNascimento", 
     "DataAssinaturaContrato", "Observacao", "ValidacaoInfosDistribuidora", 
     "DescricaoValidacaoInfosDistribuidora", "WhatsappNotificacao", 
-    "DevolucaoPisCofins", "DevolucaoFioB", "DevolucaoIcms"
+    "DevolucaoPisCofins", "DevolucaoFioB", "DevolucaoIcms", "CreditoResidual"
 ]
 
 # --- KEYS PARA MERGE DAS PLANILHAS ---
@@ -48,7 +48,8 @@ MAPEAMENTO_A = {
     "WhatsappNotificacao": "Envio de fatura via Whatsapp habilitado?", 
     "DevolucaoPisCofins": "Restituir Impostos",
     "DevolucaoFioB": "Restituir Fio B",
-    # "DevolucaoIcms": "Restituir Impostos"
+    # "DevolucaoIcms": "Restituir Impostos",
+    # "CreditoResidual": ""
 }
 
 MAPEAMENTO_B = {
@@ -180,7 +181,8 @@ if file_a and file_b:
                 "WhatsappNotificacao", 
                 "DevolucaoPisCofins", 
                 "DevolucaoFioB", 
-                "DevolucaoIcms"
+                "DevolucaoIcms",
+                "CreditoResidual"
             ]
 
             for col in cols_booleanas:
