@@ -140,16 +140,19 @@ if file_a and file_b:
             st.write(f"IDs na B (exemplo): {df_b[CHAVE_B].head(3).tolist()}")
 
         if st.button("Gerar Arquivo Final"):
+            # FILTRO: Mantém apenas as linhas que existem em AMBAS as planilhas
+            df_unificado_filtrado = df_unificado[df_unificado['_merge'] == 'both'].copy()
+
             # Cria o DataFrame vazio com o cabeçalho padrão
             df_final = pd.DataFrame(columns=COLUNAS_PADRAO)
             
-            # Define a chave principal vinda da Planilha B
-            df_final["NumeroCliente"] = df_unificado[CHAVE_B]
+            # IMPORTANTE: Agora usamos o df_unificado_filtrado para preencher os dados
+            df_final["NumeroCliente"] = df_unificado_filtrado[CHAVE_B]
 
             # Preenchimento Planilha A
             for col_f, col_o in MAPEAMENTO_A.items():
-                if col_o in df_unificado.columns:
-                    df_final[col_f] = df_unificado[col_o]
+                if col_o in df_unificado_filtrado.columns:
+                    df_final[col_f] = df_unificado_filtrado[col_o]
                 else:
                     st.warning(f"Coluna de origem '{col_o}' (Planilha A) não encontrada.")
 
@@ -224,6 +227,15 @@ if file_a and file_b:
                 df_final["Documento"] = df_final["Documento"].apply(
                     lambda x: f"{x[:-2]}-{x[-2:]}" if len(x) > 2 else x
                 )
+
+            # 6. Limpeza de NumeroInstalacao (Ex: 1234-cancel -> 1234)
+            if "NumeroInstalacao" in df_final.columns:
+                # Garante que é string e remove tudo que não for dígito (\D)
+                df_final["NumeroInstalacao"] = df_final["NumeroInstalacao"].astype(str).str.replace(r'\D', '', regex=True)
+                
+                # Opcional: Se o campo ficar vazio após a limpeza (ex: era apenas texto), 
+                # você pode preencher com vazio ou um valor padrão
+                df_final["NumeroInstalacao"] = df_final["NumeroInstalacao"].replace('', '0')
             # ---------------------------------------
 
             # Exportação
