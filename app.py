@@ -65,28 +65,33 @@ Esta ferramenta automatiza a unificação de dados entre a planilha de **Prosumi
 O objetivo é gerar um arquivo padronizado para o sistema de cadastro em massa de prosumidores, na Ecotech.
 
 **Como funciona:**
-1. **Upload:** Faça o upload da planilha A (Prosumidores DG) e planilha B (Negócios Bitrix *que vc deseja cadastrar*).
+1. **Upload:** Faça o upload da planilha A (Prosumidores DG), planilha B (Negócios Bitrix em Cobrança) e planilha C (Negócios Bitrix em Follow-Up).
 > Lembre-se de filtrar apenas os que deseja cadastrar e ativar todas as colunas no Bitrix antes de exportar o CSV.
 2. **Cruzamento:** O sistema busca a correspondência entre o *Número da Instalação* (DG) e a *UC* (Bitrix).
 3. **Prioridade:** Mantemos todos os registros da **planilha B (Bitrix)** e buscamos os dados complementares na DG.
-4. **Limpeza:** CPF/CNPJ são limpos (apenas números) e as datas são formatadas para o padrão brasileiro.
-5. **Download:** O resultado é um arquivo CSV pronto, seguindo o layout oficial de colunas da Ecotech.
-6. **Conferência:** Por fim, confira os dados gerados e preencha os faltantes, caso hajam, antes de importar na Ecotech.
+4. **Download:** O resultado é um arquivo CSV pronto, seguindo o layout oficial de colunas da Ecotech.
+5. **Conferência:** Por fim, confira os dados gerados e preencha os faltantes, caso hajam, antes de importar na Ecotech.
 ---
 """)
 # -------------------------------
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
     file_a = st.file_uploader("Planilha A (Prosumidores DG)", type=["csv", "xlsx"])
 with col2:
-    file_b = st.file_uploader("Planilha B (Negócios Bitrix)", type=["csv"])
+    file_b = st.file_uploader("Planilha B (Negócios Bitrix Cobrança)", type=["csv"])
+with col3:
+    file_c = st.file_uploader("Planilha C (Negócios Bitrix Follow-Up)", type=["csv"])
 
-if file_a and file_b:
+if file_a and file_b and file_c:
     try:
         # Leitura das planilhas
         df_a = pd.read_excel(file_a) if file_a.name.endswith('.xlsx') else pd.read_csv(file_a, sep=None, engine='python')
         df_b = pd.read_csv(file_b, sep=None, engine='python')
+        df_c = pd.read_csv(file_c, sep=None, engine='python')
+
+        # Adicionar registros de C em B (evitando o header e possíveis duplicações)
+        df_b = pd.concat([df_b, df_c], ignore_index=True)
 
         # --- BLOCO DE SEGURANÇA: NORMALIZAÇÃO ---
         # Força os IDs a serem strings, remove espaços e converte para número (se possível) para igualar formatos
@@ -124,7 +129,7 @@ if file_a and file_b:
 
         # Exibe as chaves das falhas no front
         if len(falhas) > 0:
-            with st.expander("⚠️ Ver UCs da Planilha B (Bitrix) não encontrados na Planilha A (DG)"):
+            with st.expander("⚠️ Ver UCs não encontrados na DG"):
                 st.write(f"Os seguintes IDs da coluna '{CHAVE_B}' não possuem correspondência:")
                 st.write(chaves_que_falharam)
 
@@ -236,6 +241,28 @@ if file_a and file_b:
                 # Opcional: Se o campo ficar vazio após a limpeza (ex: era apenas texto), 
                 # você pode preencher com vazio ou um valor padrão
                 df_final["NumeroInstalacao"] = df_final["NumeroInstalacao"].replace('', '0')
+
+            # 7. Formatacao de Multiplos Emails (Ex: email1, email2 -> "email1;email2")
+            if "Email" in df_final.columns:
+                # Garante que é string e remove espaços extras
+                df_final["Email"] = df_final["Email"].astype(str).str.replace(r'\s+', '', regex=True)
+                
+                # Substitui vírgulas por ponto e vírgula para melhor legibilidade
+                df_final["Email"] = df_final["Email"].str.replace(',', '; ')
+
+                # Adiciona entre aspas duplas se houver mais de um email para evitar problemas na leitura do CSV
+                df_final["Email"] = df_final["Email"].apply(lambda x: f'"{x}"' if ';' in x else x)
+
+            # 8. Formatação de Multiplos Telefones (Ex: 11999999999, 11988888888 -> "11999999999;11988888888")
+            if "Telefone" in df_final.columns:
+                # Garante que é string e remove espaços extras
+                df_final["Telefone"] = df_final["Telefone"].astype(str).str.replace(r'\s+', '', regex=True)
+                
+                # Substitui vírgulas por ponto e vírgula para melhor legibilidade
+                df_final["Telefone"] = df_final["Telefone"].str.replace(',', '; ')
+
+                # Adiciona entre aspas duplas se houver mais de um telefone para evitar problemas na leitura do CSV
+                df_final["Telefone"] = df_final["Telefone"].apply(lambda x: f'"{x}"' if ';' in x else x)
             # ---------------------------------------
 
             # Exportação
