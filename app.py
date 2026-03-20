@@ -168,6 +168,20 @@ if file_a and file_b and file_c:
                 else:
                     st.warning(f"Coluna de origem '{col_o}' (Planilha B) não encontrada.")
 
+            # Fallback (Se nõo houver em A, busca em B)
+            # Mapeamento de Fallback: { "Coluna_Final": "Coluna_na_Planilha_B" }
+            FALLBACK_B = {
+                "PromotorNome": "VENDEDOR"
+            }
+
+            for col_final, col_origem_b in FALLBACK_B.items():
+                if col_final in df_final.columns and col_origem_b in df_unificado_filtrado.columns:
+                    # Preenche apenas onde o dado da Planilha A resultou em Vazio/NaN
+                    df_final[col_final] = df_final[col_final].fillna(df_unificado_filtrado[col_origem_b])
+                    
+                    # Trata também strings vazias que não são NaN
+                    df_final.loc[df_final[col_final] == "", col_final] = df_unificado_filtrado[col_origem_b]
+
             # CORREÇÃO PARA COLUNAS DUPLICADAS (Mesma origem para destinos diferentes)
             # Atribuímos manualmente para evitar o erro de "Duplicate column names"
             if "DevolucaoPisCofins" in df_final.columns:
