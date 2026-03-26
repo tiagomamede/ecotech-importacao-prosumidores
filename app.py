@@ -83,15 +83,27 @@ with col2:
 with col3:
     file_c = st.file_uploader("Planilha C (Negócios Bitrix Follow-Up)", type=["csv"])
 
-if file_a and file_b and file_c:
+if file_a and file_b:
     try:
-        # Leitura das planilhas
+        # Leitura obrigatória de A e B
         df_a = pd.read_excel(file_a) if file_a.name.endswith('.xlsx') else pd.read_csv(file_a, sep=None, engine='python')
         df_b = pd.read_csv(file_b, sep=None, engine='python')
-        df_c = pd.read_csv(file_c, sep=None, engine='python')
 
-        # Adicionar registros de C em B (evitando o header e possíveis duplicações)
-        df_b = pd.concat([df_b, df_c], ignore_index=True)
+        # 2. Processamento OPCIONAL da Planilha C
+        if file_c is not None:
+            df_c = pd.read_csv(file_c, sep=None, engine='python')
+            
+            # Limpeza rápida de nomes de colunas para evitar erros no concat
+            df_b.columns = df_b.columns.str.strip()
+            df_c.columns = df_c.columns.str.strip()
+            
+            # Concatena C em B
+            df_b = pd.concat([df_b, df_c], ignore_index=True)
+            
+            # Opcional: Remover duplicatas caso o mesmo cliente esteja na Cobrança e no Follow-Up
+            df_b = df_b.drop_duplicates(subset=[CHAVE_B], keep='first')
+            
+            st.info(f"Planilha Follow-Up integrada. Base total (Cobrança + Follow-Up): {len(df_b)} registros.")
 
         # --- BLOCO DE SEGURANÇA: NORMALIZAÇÃO ---
         # Força os IDs a serem strings, remove espaços e converte para número (se possível) para igualar formatos
